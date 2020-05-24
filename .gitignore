@@ -2,6 +2,9 @@
 #This file must exist (and have the proper data) for code to work, see example_settings.json for how to structure this file
 settings.json
 
+#This is the directory logs get written to and this repo doesn't need all my testing lol
+logs
+
 #These are just junk files by python/vscode that aren't needed at all for the code.
 ./vscode
 __pycache__

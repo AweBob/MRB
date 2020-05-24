@@ -2,6 +2,7 @@
 from time import time, ctime
 from json import dumps
 from json import load as jsonLoad 
+from os import getcwd
 
 #==================================================================================================================================
 
@@ -11,7 +12,7 @@ def logEvent(eventType, eventStatus) : #be careful with this and strange charact
     global directPath #so it can be modified outside of it's scope.
     curTime = int(time()) #set the time so if this takes a while or starts at second .99 and ends at 1.01 it won't create confusion in the codes logic and logging process
     if(directPath==None) : #if the log hasn't been initialized
-        directPath = "\\logs\\MRB" + str(curTime) + ".log" #Set direct path 
+        directPath = getcwd() + "\logs\MRB" + str(curTime) + ".log" #Set direct path 
         openFile = open(directPath,"w+") #create the file
         openFile.write(str(dumps({'time':curTime, 'type':'starting_log', 'status':'' })) + "\n") #write initial message
         openFile.close() #save it

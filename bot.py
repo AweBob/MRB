@@ -13,27 +13,24 @@ bot = commands.Bot(command_prefix=getConstants("PREFIX"))
 @bot.event
 async def on_ready():
     logEvent(str(bot.user.display_name), "connected")
-    for guild in bot.guilds:
-        logEvent("in guild",f'{guild.name} - {guild.id}')
     #start event loop
-
-@bot.command(name='mh', brief='message history')
-@commands.has_role(getConstants("ACCESS_ROLE"))
-async def mh(ctx, arg_num=None, *args) :
-    foo = 'bar'
 
 @bot.event
 async def on_message(message) : #log message
     foo = message.author
     bar = message.content
     twothousand = message.id
+    logEvent(message,"")
 
 @bot.event
-async def on_message_edit(message) :
+async def on_message_edit(messageBefore, messageAfter) : 
     print("Message Editted.")
+    #print(str(message) + "\n\n" + str(other))
+    print(str(messageBefore.content))
+    print(str(messageAfter.content))
 
 @bot.event
-async def on_message_deleted(message) :
+async def on_message_deleted(message) : #DOESN'T WORK
     print("Message Deleted.")
 
 #==================================================================================================================================
