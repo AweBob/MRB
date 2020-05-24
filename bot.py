@@ -1,41 +1,12 @@
 
-from discord import Client as discordClient
-from discord.ext import commands#, tasks
+#from discord import Client as discordClient
+from discord.ext import commands, tasks
 
-from json import load as jsonLoad 
-from json import dump as jsonDump
-
-from log import logEvent #For printouts and logging of events
+from supporting_functions import logEvent, getConstants #For printouts and logging of events
 
 #==================================================================================================================================
 
-def getConstants(id=None) :
-    try :
-        openFile = open('settings.json','r')
-    except :
-        logEvent("getConstants ERROR","settings.json not found")
-        raise ValueError("settings.json does not exist or cannot be read")
-    data = jsonLoad(openFile)
-    if(id==None) :
-        group = [data["DISCORD_TOKEN"],data["ACCESS_ROLE"],data["BOT_CHANNEL"],data["PREFIX"]]
-        openFile.close()
-        return(group[0],group[1],group[2],group[3])
-    else :
-        group = data[id]
-        openFile.close()
-        return(group)
-
-#==================================================================================================================================  
-
-async def purge_own_messages(channel_to):
-    for message in await bot.get_channel(channel_to).history(limit=100).flatten():
-        if message.author == bot.user:
-            await message.delete()
-
-async def purge_commands(channel_to):
-    for message in await bot.get_channel(channel_to).history(limit=100).flatten():
-        if message.content.startswith(getConstants("PREFIX")):
-            await message.delete()
+bot = commands.Bot(command_prefix=getConstants("PREFIX"))
 
 #==================================================================================================================================
 
@@ -57,11 +28,16 @@ async def on_message(message) : #log message
     bar = message.content
     twothousand = message.id
 
-#on message edit
+@bot.event
+async def on_message_edit(message) :
+    print("Message Editted.")
 
-#on message delete
+@bot.event
+async def on_message_deleted(message) :
+    print("Message Deleted.")
 
 #==================================================================================================================================
 
-bot = commands.Bot(command_prefix=getConstants("PREFIX"))
-client = discordClient()
+bot.run(getConstants("DISCORD_TOKEN"))
+
+#==================================================================================================================================
