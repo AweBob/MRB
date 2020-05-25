@@ -30,10 +30,13 @@ async def on_message_edit(messageBefore, messageAfter) :
 async def on_message_deleted(message) : #DOESN'T WORK
     foo = 'bar' #
 
-#Have a looping command every so often checking for messages older then the limit and removing them
-
 #==================================================================================================================================
 
 bot.run(getConstants("DISCORD_TOKEN"))
 
 #==================================================================================================================================
+
+#TODO: on_message_edit exclude messages from bots
+#TODO: on_message_delete work
+#TODO: Make a loop every so often to remove messages outside the time range
+#TODO: Move supporting_functions.py to this same file for simplicity
