@@ -1,1 +1,1 @@
-{"DISCORD_TOKEN":"fsdghjsd.fdsnhgsygshbdfugb","BOT_CHANNEL":38974563435,"HOLDING_TIME":69420,"LOG":"True"}
+{"DISCORD_TOKEN":"fsdghjsd.fdsnhgsygshbdfugb","BOT_CHANNEL":38974563435,"LOG":"True","EXCLUDED_CHANNELS":["general","foo-bar"],"EXCLUDED_USERS":["Bot#1337","Somebody#6969"]}

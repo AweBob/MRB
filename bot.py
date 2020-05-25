@@ -1,6 +1,7 @@
 
 #Imports for the discord interaction
 from discord.ext import commands, tasks #for the discord bot itself
+from discord import Game as activityType #maybe find better type later on
 
 #Imports for supporting functions
 from time import time, ctime
@@ -27,59 +28,66 @@ def logEvent(eventType, eventStatus) : #be careful with this and strange charact
         openFile.close() #save it
     print(str(ctime(curTime)) + " - " + str(eventType) + " - " + str(eventStatus)) #Do a printout as well
 
-def getConstants(id=None) :
+def getConstants(id) :
     try :
         openFile = open('settings.json','r')
     except :
         logEvent("getConstants ERROR","settings.json not found")
         raise ValueError("settings.json does not exist or cannot be read")
     data = jsonLoad(openFile)
-    if(id==None) :
-        group = [data["DISCORD_TOKEN"],data["BOT_CHANNEL"],data["HOLDING_TIME"],data["LOG"]]
-        openFile.close()
-        return(group[0],group[1],group[2])
-    else :
+    try :
         group = data[id]
-        openFile.close()
-        return(group)
+    except :
+        logEvent("getConstants ERROR",str(id) + " does not exist")
+        raise ValueError(str(id) + " does not exist in settings.json")
+    openFile.close()
+    return(group)
 
 #==================================================================================================================================
-#Define the bot
 
-bot = commands.Bot(command_prefix=None) #no commands so no prefix
-loggedMessages = {} #{id: [message, author, channel], id:[], }
+bot = commands.Bot(command_prefix='') #Define the bot  #no commands so no prefix
 
 #==================================================================================================================================
-#Add all the events and loops
+#Add all the events to the bot
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound): #supress if cmd isn't found because there aren't any commands anyways...
+        return
+    raise error
 
 @bot.event
 async def on_ready():
+    await bot.change_presence(activity=activityType("https://github.com/AweBob/mrb"))
     logEvent(str(bot.user.display_name), "connected")
 
 @bot.event
-async def on_message(message) :
-    if message.author != bot.user : #if it's not the bot
-        loggedMessages[message.id] = [message.content, message.author, message.channel]
-        logEvent("message" + str(message.id),"logged") #if it was an edit the id will remain the same and this will write over the old info
-
-@bot.event
 async def on_message_edit(messageBefore, messageAfter) : 
-    if messageBefore.author != bot.user : #if it's not the bot
-        await bot.get_channel(getConstants("BOT_CHANNEL")).send('Message Edit Alert:\nAuthor: ' + str(messageAfter.author) + ' in channel: #' + str(messageBefore.channel) + " \nBefore: " + str(messageBefore.content) + "\nAfter: " + str(messageAfter.content))
-        loggedMessages[messageAfter.id] = [messageAfter.content, messageAfter.author, messageAfter.channel] #reset the records
-        logEvent("edit"+str(messageAfter.id),"logged") #log it
+    if messageBefore.author != bot.user and messageBefore.content != messageAfter.content: #if it's not the bot and if the edit actually changed something
+        if str(messageBefore.author) not in getConstants("EXCLUDED_USERS") and str(messageBefore.channel) not in getConstants("EXCLUDED_CHANNELS"):
+            await bot.get_channel(getConstants("BOT_CHANNEL")).send('Message Edit Alert:\nAuthor: ' + str(messageAfter.author) + ' in channel: #' + str(messageBefore.channel) + " \nBefore: " + str(messageBefore.content) + "\nAfter: " + str(messageAfter.content))
+            logEvent("edit"+str(messageAfter.id),"logged") #log it
     
 @bot.event
-async def on_message_deleted(message) :
-    foo = 'bar' 
+async def on_raw_message_delete(messageIn) :
+    message = messageIn.cached_message #the message is what's left over
+    await deletedMessage(message) #has logging
+
+@bot.event
+async def on_raw_bulk_message_delete(messagesIn) :
+    messages = messagesIn.cached_messages
+    for message in messages :
+        await deletedMessage(message) #has logging
+
+async def deletedMessage(message) :
+    if message != None :
+        if message.author != bot.user :
+            if str(message.author) not in getConstants("EXCLUDED_USERS") and str(message.channel) not in getConstants("EXCLUDED_CHANNELS"):
+                await bot.get_channel(getConstants("BOT_CHANNEL")).send('Message Delete Alert:\nAuthor: '+str(message.author)+ ' in channel: #'+str(message.channel)+' at time: '+str(message.created_at)+"\nMessage: "+str(message.content))
+                logEvent("delete"+str(message.id),"logged")
 
 #==================================================================================================================================
 
 bot.run(getConstants("DISCORD_TOKEN")) #Start the bot 
 
 #==================================================================================================================================
-
-#TODO: on_message_edit exclude messages from bots
-#TODO: on_message_delete work
-#TODO: Make a loop every so often to remove messages outside the time range
-#TODO: make logging optional from settings.json
