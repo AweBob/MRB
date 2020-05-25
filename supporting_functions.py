@@ -31,9 +31,9 @@ def getConstants(id=None) :
         raise ValueError("settings.json does not exist or cannot be read")
     data = jsonLoad(openFile)
     if(id==None) :
-        group = [data["DISCORD_TOKEN"],data["ACCESS_ROLE"],data["BOT_CHANNEL"],data["PREFIX"]]
+        group = [data["DISCORD_TOKEN"],data["BOT_CHANNEL"],data["HOLDING_TIME"]]
         openFile.close()
-        return(group[0],group[1],group[2],group[3])
+        return(group[0],group[1],group[2])
     else :
         group = data[id]
         openFile.close()
