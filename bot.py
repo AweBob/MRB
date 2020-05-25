@@ -1,12 +1,10 @@
 
-from discord import Client as discordClient
 from discord.ext import commands, tasks #for the discord bot itself
 from supporting_functions import logEvent, getConstants #For printouts and logging of events
 
 #==================================================================================================================================
 
-bot = commands.Bot(command_prefix=getConstants("PREFIX"))
-discordClient = discordClient()
+bot = commands.Bot(command_prefix=None) #no commands so no prefix
 loggedMessages = {} #id: [message, author, channel]
 
 #==================================================================================================================================
