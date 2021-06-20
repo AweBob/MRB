@@ -1,93 +1,130 @@
 
-#Imports for the discord interaction
-from discord.ext import commands, tasks #for the discord bot itself
-from discord import Game as activityType #maybe find better type later on
+#===========================================================================================================================================================================================================
 
-#Imports for supporting functions
-from time import time, ctime
-from json import dumps
+#Python 3.8.3
+#Message Recording Bot - MRB
+#By: AweBob#6221
+
+#===========================================================================================================================================================================================================
+
+#Modules
+
+from discord.ext import commands, tasks
+from discord import Game as activityType 
 from json import load as jsonLoad 
-from os import getcwd
+import logging
 
-#==================================================================================================================================
-#Define all my supporting functions
+#===========================================================================================================================================================================================================
 
-directPath = None #will be determined by initLog
+#Define constants from settings.json (throw proper errors if need be) : Open File -> Load Json -> Grab Each Variable & Check Type : Throw error & log at any failure point
 
-def logEvent(eventType, eventStatus) : #be careful with this and strange characters, if you ever wanna read this log with code strange characters r gonna mess everything up. underscores r ok
-    curTime = int(time()) #set the time so if this takes a while or starts at second .99 and ends at 1.01 it won't create confusion in the codes logic and logging process
-    if (getConstants("LOG")=="True") : #If the setting is enabled
-        global directPath #so it can be modified outside of it's scope.
-        if(directPath==None) : #if the log hasn't been initialized
-            directPath = getcwd() + "\logs\MRB" + str(curTime) + ".log" #Set direct path 
-            openFile = open(directPath,"w+") #create the file
-            openFile.write(str(dumps({'time':curTime, 'type':'starting_log', 'status':'' })) + "\n") #write initial message
-            openFile.close() #save it
-        openFile = open(directPath, 'a') #open it with append mode
-        openFile.write(str(dumps({'time':curTime, 'type':str(eventType), 'status':str(eventStatus)})) + "\n")
-        openFile.close() #save it
-    print(str(ctime(curTime)) + " - " + str(eventType) + " - " + str(eventStatus)) #Do a printout as well
+try :
+    openFile = open('settings.json','r') #from current directory
+except :
+    logging.critical("settings.json not found in working directory or cannot be read")
+    raise ValueError("settings.json not found in working directory or cannot be read")
 
-def getConstants(id) :
-    try :
-        openFile = open('settings.json','r')
-    except :
-        logEvent("getConstants ERROR","settings.json not found")
-        raise ValueError("settings.json does not exist or cannot be read")
+try :
     data = jsonLoad(openFile)
-    try :
-        group = data[id]
-    except :
-        logEvent("getConstants ERROR",str(id) + " does not exist")
-        raise ValueError(str(id) + " does not exist in settings.json")
-    openFile.close()
-    return(group)
+except :
+    logging.critical("settings.json could not be converted to json (possibly improper json format)")
+    raise OSError("settings.json could not be converted to json")
 
-#==================================================================================================================================
+try :
+    DISCORD_TOKEN = data["DISCORD_TOKEN"]
+except :
+    logging.critical("settings.json doesn't contain DISCORD_TOKEN")
+    raise ValueError("settings.json doesn't contain DISCORD_TOKEN")
+if not type(DISCORD_TOKEN) == type(str()) :
+    logging.critical(f"DISCORD_TOKEN from settings.json is {type(DISCORD_TOKEN)}, but must be {type(str())}")
+    raise ValueError(f"DISCORD_TOKEN from settings.json is {type(DISCORD_TOKEN)}, but must be {type(str())}")
 
-bot = commands.Bot(command_prefix='') #Define the bot  #no commands so no prefix
+try :
+    BOT_CHANNEL = data["BOT_CHANNEL"]
+except :
+    logging.critical("settings.json doesn't contain BOT_CHANNEL")
+    raise ValueError("settings.json doesn't contain BOT_CHANNEL")
+if not type(BOT_CHANNEL) == type(int()) :
+    logging.critical(f"BOT_CHANNEL from settings.json is {type(BOT_CHANNEL)}, but must be {type(int())}")
+    raise ValueError(f"BOT_CHANNEL from settings.json is {type(BOT_CHANNEL)}, but must be {type(int())}")
 
-#==================================================================================================================================
+try :
+    EXCLUDED_CHANNELS = data["EXCLUDED_CHANNELS"]
+except :
+    logging.critical("settings.json doesn't contain EXCLUDED_CHANNELS")
+    raise ValueError("settings.json doesn't contain EXCLUDED_CHANNELS")
+if not type(EXCLUDED_CHANNELS) == type(list()) :
+    logging.critical(f"EXCLUDED_CHANNELS from settings.json is {type(EXCLUDED_CHANNELS)}, but must be {type(list())}")
+    raise ValueError(f"EXCLUDED_CHANNELS from settings.json is {type(EXCLUDED_CHANNELS)}, but must be {type(list())}")
+for excludedChannel in EXCLUDED_CHANNELS :
+    if not type(excludedChannel) == type(str()) :
+        logging.critical(f"{excludedChannel} in EXCLUDED_CHANNELS from settings.json is {type(excludedChannel)}, but must be {type(str())}")
+        raise ValueError(f"{excludedChannel} in EXCLUDED_CHANNELS from settings.json is {type(excludedChannel)}, but must be {type(str())}")
+
+try :
+    EXCLUDED_USERS = data["EXCLUDED_USERS"]
+except :
+    logging.critical("settings.json doesn't contain EXCLUDED_USERS")
+    raise ValueError("settings.json doesn't contain EXCLUDED_USERS")
+if not type(EXCLUDED_USERS) == type(list()) :
+    logging.critical(f"EXCLUDED_USERS from settings.json is {type(EXCLUDED_USERS)}, but must be {type(list())}")
+    raise ValueError(f"EXCLUDED_USERS from settings.json is {type(EXCLUDED_USERS)}, but must be {type(list())}")
+for excludedUser in EXCLUDED_USERS :
+    if not type(excludedUser) == type(str()) :
+        logging.critical(f"{excludedUser} in EXCLUDED_USERS from settings.json is {type(excludedUser)}, but must be {type(str())}")
+        raise ValueError(f"{excludedUser} in EXCLUDED_USERS from settings.json is {type(excludedUser)}, but must be {type(str())}")
+
+#===========================================================================================================================================================================================================
+
+#Define the bot (bot has no commands so doesn't take a prefix)
+
+bot = commands.Bot( command_prefix=str() ) 
+
+#===========================================================================================================================================================================================================
+
 #Add all the events to the bot
 
+#Supress CommandNotFound error because there aren't any commands in this message recording bot (additonally, this might happen a lot because the command_prefix is a clear string)
 @bot.event
-async def on_command_error(ctx, error):
-    if isinstance(error, commands.CommandNotFound): #supress if cmd isn't found because there aren't any commands anyways...
-        return
-    raise error
+async def on_command_error(ctx, error): 
+    if not isinstance(error, commands.CommandNotFound): #if error is not a subclass of CommandNotFound error
+        raise error #reraise the error
+    #else (if error is a subcless of CommandNotFound error) then do nothing (causing error to not get raised)
 
+#When bot logs in
 @bot.event
 async def on_ready():
-    await bot.change_presence(activity=activityType("https://github.com/AweBob/mrb"))
-    logEvent(str(bot.user.display_name), "connected")
+    await bot.change_presence( activity=activityType("https://github.com/AweBob/mrb") ) #set bot's activity to a link to this github repo
+    logging.info(f"{bot.user.display_name} connected") #log that the bot is connected as info
 
+#When an editted message is detected
 @bot.event
 async def on_message_edit(messageBefore, messageAfter) : 
-    if messageBefore.author != bot.user and messageBefore.content != messageAfter.content: #if it's not the bot and if the edit actually changed something
-        if str(messageBefore.author) not in getConstants("EXCLUDED_USERS") and str(messageBefore.channel) not in getConstants("EXCLUDED_CHANNELS"):
-            await bot.get_channel(getConstants("BOT_CHANNEL")).send('Message Edit Alert:\nAuthor: ' + str(messageAfter.author) + ' in channel: #' + str(messageBefore.channel) + " \nBefore: " + str(messageBefore.content) + "\nAfter: " + str(messageAfter.content))
-            logEvent("edit"+str(messageAfter.id),"logged") #log it
+    if (messageBefore.author != bot.user) and (messageBefore.content != messageAfter.content) and (str(messageBefore.author) not in EXCLUDED_USERS) and (str(messageBefore.channel) not in EXCLUDED_CHANNELS) :  #if it's not the bot and if the edit actually changed something and the author isn't excluded and the message is not in an excluded channel
+        await bot.get_channel(BOT_CHANNEL).send(f"Message Edit Alert:\nAuthor: {messageAfter.author} in channel: #{messageBefore.channel} \nBefore: {messageBefore.content}\nAfter: {messageAfter.content}")
+        logging.info(f"edit detected in {messageAfter.id}") 
     
+#When a single message is deleted
 @bot.event
 async def on_raw_message_delete(messageIn) :
-    message = messageIn.cached_message #the message is what's left over
-    await deletedMessage(message) #has logging
+    await deletedMessage( messageIn.cached_message ) #Call function to process the message
 
+#When multiple messages are deleted
 @bot.event
 async def on_raw_bulk_message_delete(messagesIn) :
-    messages = messagesIn.cached_messages
-    for message in messages :
-        await deletedMessage(message) #has logging
+    for message in messagesIn.cached_messages : #for every message
+        await deletedMessage( message ) #call function to process message
 
+#Process a deleted message (Not a bot event)
 async def deletedMessage(message) :
-    if message != None :
-        if message.author != bot.user :
-            if str(message.author) not in getConstants("EXCLUDED_USERS") and str(message.channel) not in getConstants("EXCLUDED_CHANNELS"):
-                await bot.get_channel(getConstants("BOT_CHANNEL")).send('Message Delete Alert:\nAuthor: '+str(message.author)+ ' in channel: #'+str(message.channel)+' at time: '+str(message.created_at)+"\nMessage: "+str(message.content))
-                logEvent("delete"+str(message.id),"logged")
+    if (message != None) and (message.author != bot.user) and (str(message.author) not in EXCLUDED_USERS) and (str(message.channel) not in EXCLUDED_CHANNELS) : #if message exists and message isn't by the bot and message isnt by an excluded user and message isnt from an excluded channel
+        await bot.get_channel(BOT_CHANNEL).send(f"Message Delete Alert:\nAuthor: {message.author} in channel: #{message.channel} at time: {message.created_at}\nMessage: {message.content}")
+        logging.info(f"deletion detected in {message.id}")
 
-#==================================================================================================================================
+#===========================================================================================================================================================================================================
 
-bot.run(getConstants("DISCORD_TOKEN")) #Start the bot 
+#Start the bot
 
-#==================================================================================================================================
+bot.run(DISCORD_TOKEN) 
+
+#===========================================================================================================================================================================================================
